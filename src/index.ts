@@ -10,6 +10,16 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+const filterPlayerState = (state: any) => {
+  state.next_tracks = [];
+  state.prev_tracks = [];
+  state.playback_id = "";
+  state.context_metadata = {};
+  state.session_id = "";
+  state.queue_revision = "0";
+  return state;
+};
+
 app.get("/", async (c) => {
   const upgradeHeader = c.req.header("Upgrade");
   if (upgradeHeader !== "websocket") {
@@ -52,9 +62,13 @@ app.get("/", async (c) => {
             defaultSpotifyDevice
           );
 
-          server.send(JSON.stringify(cluster.player_state));
+          server.send(JSON.stringify(filterPlayerState(cluster.player_state)));
         } else if (json.uri == "hm://connect-state/v1/cluster") {
-          server.send(JSON.stringify(json.payloads[0].cluster.player_state));
+          server.send(
+            JSON.stringify(
+              filterPlayerState(json.payloads[0].cluster.player_state)
+            )
+          );
         }
       }
     });
