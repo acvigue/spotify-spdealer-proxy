@@ -17,13 +17,9 @@ type Bindings = {
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.get("/", async (c) => {
-  return c.redirect("https://www.youtube.com/watch?v=FfnQemkjPjM", 302);
-});
-
-app.get("/websocket", async (c) => {
   const upgradeHeader = c.req.header("Upgrade");
   if (upgradeHeader !== "websocket") {
-    return c.text("Expected websocket", 400);
+    return c.redirect("https://www.youtube.com/watch?v=FfnQemkjPjM", 302);
   }
 
   try {
