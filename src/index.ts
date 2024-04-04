@@ -1,11 +1,5 @@
 import { Hono } from "hono";
-import {
-  connectState,
-  getAccessToken,
-  getDealerURL,
-  subscribeToNotifications,
-  trackPlayback,
-} from "./spotify";
+import { connectState, getAccessToken, getDealerURL } from "./spotify";
 import type { WebSocket as CFWebSocket } from "@cloudflare/workers-types";
 import { defaultSpotifyDevice } from "./const";
 
