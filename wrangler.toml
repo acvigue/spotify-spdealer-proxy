@@ -1,0 +1,6 @@
+name = "spdealer"
+compatibility_date = "2023-12-01"
+
+[[kv_namespaces]]
+binding = "kv"
+id = "0856d69697c04e029ef5672706f98020"
