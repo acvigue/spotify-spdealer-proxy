@@ -30,11 +30,11 @@ export const getDealerURL = async (accessToken: string) => {
 };
 
 export const getAccessToken = async (kv: KVNamespace, cookies: string) => {
-  const hasAccessToken = await kv.get("access_token");
+  const hasAccessToken = await kv.get("spotify_access_token");
   if (hasAccessToken === null) {
     const tokenResp = await getAccessTokenInternal(cookies);
-    await kv.put("access_token", tokenResp.accessToken, {
-      expirationTtl: tokenResp.accessTokenExpirationTimestampMs / 1000,
+    await kv.put("spotify_access_token", tokenResp.accessToken, {
+      expiration: tokenResp.accessTokenExpirationTimestampMs / 1000,
     });
     return tokenResp.accessToken;
   }

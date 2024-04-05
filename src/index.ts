@@ -43,8 +43,10 @@ app.get("/", async (c) => {
 
     const dealerSocket = dealerResp.webSocket;
     if (!dealerSocket) {
-      console.log(dealerResp);
-      throw new Error("server didn't accept WebSocket");
+      const errorText = await dealerResp.text();
+      throw new Error(
+        `server didn't accept WebSocket (${dealerResp.status}): ${errorText}`
+      );
     }
 
     dealerSocket.accept();
