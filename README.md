@@ -1,5 +1,9 @@
-# Spotify WSS Proxy
+# Spotify SPDealer Proxy
 
-use wrangler to deploy, SP_COOKIES env var to cookies from open.spotify.com
+Serverless application to create a connection to Spotify's undocumented socket API. Allows near realtime state updates.
 
-see demo: `wss://guc3-dealer.koiosdigital.net`
+Used on `vigue.me`
+
+### See what I'm listening to!
+
+connect to: `wss://guc3-dealer.koiosdigital.net`
