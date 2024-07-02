@@ -1,8 +1,5 @@
-```
-npm install
-npm run dev
-```
+# Spotify WSS Proxy
 
-```
-npm run deploy
-```
+use wrangler to deploy, SP_COOKIES env var to cookies from open.spotify.com
+
+see demo: `wss://guc3-dealer.koiosdigital.net`
