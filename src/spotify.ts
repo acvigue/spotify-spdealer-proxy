@@ -177,3 +177,41 @@ export const connectState = async (
 
   return json as SpotifyCluster;
 };
+
+/**
+ * Fetches the current state of the cluster
+ * @param trackID ID of the track to fetch
+ * @param accessToken token representing the user to fetch from
+ */
+export const fetchTrackDetails = async (
+  trackID: string,
+  accessToken: string
+) => {
+  const response = await fetch(
+    `https://api.spotify.com/v1/tracks/${trackID}`,
+    {
+      method: "GET",
+      headers: {
+        ...CORE_HEADERS,
+        authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (response.status !== 200) {
+    const text = await response.text();
+    throw new Error(`Failed to fetch track details (${response.status}): ${text}`);
+  }
+
+  const json = await response.json() as any;
+
+  const json2 = {
+    album: json.album,
+    artists: json.artists,
+    name: json.name,
+    external_urls: json.external_urls,
+    explicit: json.explicit,
+  };
+
+  return json2;
+};

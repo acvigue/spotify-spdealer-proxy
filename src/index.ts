@@ -1,7 +1,8 @@
 import { Hono } from "hono";
-import { connectState, getAccessToken, getDealerURL } from "./spotify";
+import { connectState, fetchTrackDetails, getAccessToken, getDealerURL } from "./spotify";
 import type { WebSocket as CFWebSocket } from "@cloudflare/workers-types";
 import { defaultSpotifyDevice } from "./const";
+import { SpotifyPlayerState, SpotifyPlayerStateFragment } from "../types/SpotifyCluster";
 
 type Bindings = {
   kv: KVNamespace;
@@ -10,14 +11,22 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-const filterPlayerState = (state: any) => {
-  state.next_tracks = [];
-  state.prev_tracks = [];
-  state.playback_id = "";
-  state.context_metadata = {};
-  state.session_id = "";
-  state.queue_revision = "0";
-  return state;
+const filterPlayerState = async (state: SpotifyPlayerState, token: string) => {
+  const { next_tracks,
+    prev_tracks,
+    playback_id,
+    context_metadata,
+    session_id,
+    queue_revision,
+    ...filtered
+  } = state;
+
+  const trackData = await fetchTrackDetails(filtered.track.uri.split(":")[2], token);
+
+  return {
+    ...filtered,
+    track: trackData
+  };
 };
 
 app.get("/", async (c) => {
@@ -64,11 +73,14 @@ app.get("/", async (c) => {
             defaultSpotifyDevice
           );
 
-          server.send(JSON.stringify(filterPlayerState(cluster.player_state)));
+          const state = await filterPlayerState(cluster.player_state, accessToken);
+
+          server.send(JSON.stringify(state));
         } else if (json.uri == "hm://connect-state/v1/cluster") {
+          const state = await filterPlayerState(json.payloads[0].cluster.player_state, accessToken);
           server.send(
             JSON.stringify(
-              filterPlayerState(json.payloads[0].cluster.player_state)
+              state
             )
           );
         }
