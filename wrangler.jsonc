@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "spdealer",
+  "name": "spotify",
   "main": "src/index.ts",
   "compatibility_date": "2025-04-17",
   "compatibility_flags": ["nodejs_compat"],
@@ -8,7 +8,7 @@
   "kv_namespaces": [
     {
       "binding": "kv",
-      "id": "0856d69697c04e029ef5672706f98020"
-    }
-  ]
+      "id": "cfb99130996b47d5849d9832b8582386",
+    },
+  ],
 }

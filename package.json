@@ -4,10 +4,10 @@
     "deploy": "wrangler deploy --minify src/index.ts"
   },
   "dependencies": {
-    "hono": "^4.9.2"
+    "hono": "^4.12.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250816.0"
+    "@cloudflare/workers-types": "^4.20260226.1"
   },
-  "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748"
+  "packageManager": "pnpm@11.0.0-dev.1005+sha512.91f84a392eea348ea4852a182912d2520273a4336f933b78cc44bc931eb999923c097e9433a9b355adc1f725725ea99082fc9f032a559df832632e764c92c798"
 }

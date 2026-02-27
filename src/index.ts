@@ -1,43 +1,55 @@
 import { Hono } from "hono";
-import { connectState, fetchTrackDetails, getAccessToken, getDealerURL } from "./spotify";
+import { connectState, fetchTrackDetails, getDealerURL } from "./api";
+import { getAccessToken, getClientToken } from "./tokens";
 import type { WebSocket as CFWebSocket } from "@cloudflare/workers-types";
-import { defaultSpotifyDevice } from "./const";
-import { SpotifyPlayerState, SpotifyPlayerStateFragment } from "../types/SpotifyCluster";
-
-type Bindings = {
+import { defaultSpotifyDevice } from "./const";type Bindings = {
   kv: KVNamespace;
   SP_COOKIES: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-const filterPlayerState = async (state: SpotifyPlayerState, token: string) => {
-  const { next_tracks,
-    prev_tracks,
-    playback_id,
-    context_metadata,
-    session_id,
-    queue_revision,
-    ...filtered
-  } = state;
+const SCDN_IMAGE_URL = "https://i.scdn.co/image";
 
-  const trackData = await fetchTrackDetails(filtered.track.uri.split(":")[2], token);
+const filterTrackData = (track: any) => ({
+  name: track.name,
+  uri: track.canonical_uri,
+  duration_ms: track.duration,
+  disc_number: track.disc_number,
+  track_number: track.number,
+  popularity: track.popularity,
+  artists: track.artist?.map((a: any) => ({ name: a.name })),
+  album: {
+    name: track.album?.name,
+    release_date: track.album?.date,
+    images: track.album?.cover_group?.image?.map((img: any) => ({
+      url: `${SCDN_IMAGE_URL}/${img.file_id}`,
+      width: img.width,
+      height: img.height,
+    })),
+  },
+});
+
+const filterPlayerState = async (state: any, token: string, clientToken: string) => {
+  const trackId = state.track?.uri?.split(":")?.[2];
+  if (!trackId) return null;
+
+  const trackData = await fetchTrackDetails(trackId, token, clientToken);
 
   return {
-    ...filtered,
-    track: trackData
+    is_playing: state.is_playing,
+    is_paused: state.is_paused,
+    position_ms: Number(state.position_as_of_timestamp),
+    timestamp: Number(state.timestamp),
+    track: filterTrackData(trackData),
   };
 };
 
 app.get("/", async (c) => {
-  const upgradeHeader = c.req.header("Upgrade");
-  if (upgradeHeader !== "websocket") {
-    return c.redirect("https://www.youtube.com/watch?v=FfnQemkjPjM", 302);
-  }
-
   try {
     const accessToken = await getAccessToken(c.env.kv, c.env.SP_COOKIES);
-    const dealerURL = await getDealerURL(accessToken);
+    const clientToken = await getClientToken(c.env.kv, accessToken.clientId, defaultSpotifyDevice.device_id);
+    const dealerURL = getDealerURL(accessToken.accessToken);
 
     const webSocketPair = new WebSocketPair();
     const client = webSocketPair[0];
@@ -68,16 +80,19 @@ app.get("/", async (c) => {
           connection_id = json.headers["Spotify-Connection-Id"];
 
           const cluster = await connectState(
+            c.env.kv,
             connection_id,
-            accessToken,
+            accessToken.clientId,
+            accessToken.accessToken,
             defaultSpotifyDevice
           );
 
-          const state = await filterPlayerState(cluster.player_state, accessToken);
+
+          const state = await filterPlayerState(cluster.player_state, accessToken.accessToken, clientToken);
 
           server.send(JSON.stringify(state));
         } else if (json.uri == "hm://connect-state/v1/cluster") {
-          const state = await filterPlayerState(json.payloads[0].cluster.player_state, accessToken);
+          const state = await filterPlayerState(json.payloads[0].cluster.player_state, accessToken.accessToken, clientToken);
           server.send(
             JSON.stringify(
               state
@@ -87,25 +102,10 @@ app.get("/", async (c) => {
       }
     });
 
-    dealerSocket.addEventListener("close", async (msg) => {
-      console.log("Dealer closed", msg);
-      await server.close();
-    });
-
-    dealerSocket.addEventListener("error", async (msg) => {
-      console.log("Dealer error", msg);
-      await server.close();
-    });
-
-    server.addEventListener("close", async (msg) => {
-      console.log("Server closed", msg);
-      await dealerSocket.close();
-    });
-
-    server.addEventListener("error", async (msg) => {
-      console.log("Server error", msg);
-      await server.close();
-    });
+    dealerSocket.addEventListener("close", async () => server.close());
+    dealerSocket.addEventListener("error", async () => server.close());
+    server.addEventListener("close", async () => dealerSocket.close());
+    server.addEventListener("error", async () => server.close());
 
     return new Response(null, {
       status: 101,
